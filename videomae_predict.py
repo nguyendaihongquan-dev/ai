@@ -1,20 +1,18 @@
 """
 Script để dự đoán video tích cực/tiêu cực bằng model đã fine-tune
 """
-from transformers import AutoProcessor, AutoModelForVideoClassification
-import torch
-from extract_frames import load_video
-import sys
 import os
+import sys
 
-# Đường dẫn model đã fine-tune
-MODEL_PATH = "./videomae_finetuned_final"
+from inference_service import (
+    DEFAULT_MODEL_PATH,
+    LABELS,
+    load_inference_components,
+    predict_from_path,
+)
 
-# Nhãn
-LABELS = {0: "POSITIVE (Tích cực)", 1: "NEGATIVE (Tiêu cực)"}
 
-
-def predict(video_path, model_path=MODEL_PATH):
+def predict(video_path, model_path=DEFAULT_MODEL_PATH):
     """
     Dự đoán video tích cực hay tiêu cực
     
@@ -35,29 +33,12 @@ def predict(video_path, model_path=MODEL_PATH):
     
     # Load model và processor
     print(f"Đang tải model từ: {model_path}")
-    processor = AutoProcessor.from_pretrained(model_path)
-    model = AutoModelForVideoClassification.from_pretrained(model_path)
-    model.eval()
+    processor, model = load_inference_components(model_path)
     print("✓ Đã tải model xong")
     
-    # Trích xuất frames
-    print(f"Đang xử lý video: {video_path}")
-    frames = load_video(video_path)
-    
-    # Xử lý frames
-    inputs = processor(videos=list(frames), return_tensors="pt")
-    
     # Dự đoán
-    with torch.no_grad():
-        logits = model(**inputs).logits
-    
-    # Tính xác suất
-    probs = torch.softmax(logits, dim=-1)
-    pred_idx = probs.argmax(-1).item()
-    score = probs[0][pred_idx].item()
-    label_name = LABELS[pred_idx]
-    
-    return pred_idx, score, label_name
+    print(f"Đang xử lý video: {video_path}")
+    return predict_from_path(video_path, processor, model)
 
 
 if __name__ == "__main__":
@@ -72,9 +53,12 @@ if __name__ == "__main__":
     model_path = sys.argv[2] if len(sys.argv) > 2 else MODEL_PATH
     
     try:
-        label, score, label_name = predict(video_path, model_path)
+        result = predict(video_path, model_path)
         
-        if label is not None:
+        if result and result.get("label_name") is not None:
+            label = result["label_index"]
+            score = result["confidence"]
+            label_name = result["label_name"]
             print("\n" + "=" * 50)
             print("KẾT QUẢ DỰ ĐOÁN")
             print("=" * 50)
@@ -84,9 +68,10 @@ if __name__ == "__main__":
             print("=" * 50)
             
             # Hiển thị xác suất cho cả 2 classes
+            probs = result.get("probabilities", {})
             print("\nChi tiết:")
-            print(f"  - POSITIVE: {score:.2%}" if label == 0 else f"  - POSITIVE: {1-score:.2%}")
-            print(f"  - NEGATIVE: {1-score:.2%}" if label == 0 else f"  - NEGATIVE: {score:.2%}")
+            print(f"  - POSITIVE: {probs.get(LABELS[0], 0):.2%}")
+            print(f"  - NEGATIVE: {probs.get(LABELS[1], 0):.2%}")
         
     except FileNotFoundError:
         print(f"❌ Không tìm thấy file video: {video_path}")

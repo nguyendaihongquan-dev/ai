@@ -3,14 +3,23 @@ Script tự động tải dataset video positive/negative từ YouTube
 """
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 import random
 
+def _python_cmd():
+    """
+    Trả về lệnh python hiện tại để dùng cho subprocess.
+    Dùng sys.executable để tránh lỗi 'python3' trên Windows.
+    """
+    return sys.executable or "python"
+
+
 def check_yt_dlp():
     """Kiểm tra yt-dlp"""
     try:
-        subprocess.run(["python3", "-m", "yt_dlp", "--version"], 
+        subprocess.run([_python_cmd(), "-m", "yt_dlp", "--version"],
                       capture_output=True, check=True)
         return True
     except:
@@ -19,7 +28,7 @@ def check_yt_dlp():
 def install_yt_dlp():
     """Cài đặt yt-dlp"""
     print("Đang cài đặt yt-dlp...")
-    subprocess.run(["python3", "-m", "pip", "install", "yt-dlp", "--quiet"])
+    subprocess.run([_python_cmd(), "-m", "pip", "install", "yt-dlp", "--quiet"])
     print("✓ Đã cài đặt yt-dlp")
 
 def search_and_download(query, output_dir, max_results=10, label=""):
@@ -31,7 +40,7 @@ def search_and_download(query, output_dir, max_results=10, label=""):
     
     # Lấy danh sách video
     cmd = [
-        "python3", "-m", "yt_dlp",
+        _python_cmd(), "-m", "yt_dlp",
         "--flat-playlist",
         "--print", "%(id)s|%(title)s",
         search_url
@@ -67,7 +76,7 @@ def search_and_download(query, output_dir, max_results=10, label=""):
             
             # Tải video
             download_cmd = [
-                "python3", "-m", "yt_dlp",
+                _python_cmd(), "-m", "yt_dlp",
                 "-f", "best[ext=mp4][height<=720]",  # Chất lượng vừa phải
                 "--no-playlist",
                 "-o", str(output_path),

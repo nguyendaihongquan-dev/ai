@@ -88,6 +88,27 @@ Model đã fine-tune sẽ được lưu tại `./videomae_finetuned_final`
 python videomae_predict.py path/to/video.mp4
 ```
 
+## 🐳 Chạy Backend bằng Docker
+
+### Build image
+```
+docker build -t videomae-service .
+```
+
+### Run container
+Mount thư mục chứa model đã fine-tune vào `/models` (đảm bảo có `videomae_finetuned_final` bên trong):
+```
+docker run -it --rm -p 8000:8000 ^
+  -v C:\Users\BKFET-D8707-KieN\Desktop\ai\videomae_finetuned_final:/models/videomae_finetuned_final ^
+  videomae-service
+```
+
+API sẽ sẵn sàng tại `http://localhost:8000`. Gửi request:
+```
+curl -X POST http://localhost:8000/predict ^
+  -F "video_url=https://example.com/video.mp4"
+```
+
 ## 📝 Dataset Format
 
 Dataset cần có cấu trúc:
