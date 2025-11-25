@@ -40,14 +40,22 @@ python videomae_test.py path/to/your/video.mp4
 ```
 .
 ├── requirements.txt          # Danh sách thư viện cần thiết
-├── extract_frames.py        # Script trích xuất frames từ video
-├── videomae_test.py         # Script test model VideoMAE gốc
-├── videomae_finetune.py     # Script fine-tune model cho positive/negative
-├── videomae_predict.py      # Script dự đoán với model đã fine-tune
+├── Dockerfile                # Docker image cho backend service
+├── .dockerignore             # Files bỏ qua khi build Docker
+├── docker-push.ps1           # Script tự động push lên Docker Hub
+├── extract_frames.py         # Script trích xuất frames từ video
+├── videomae_test.py          # Script test model VideoMAE gốc
+├── videomae_finetune.py      # Script fine-tune model cho positive/negative
+├── videomae_predict.py       # Script dự đoán với model đã fine-tune
+├── app.py                    # FastAPI backend service
+├── inference_service.py      # Module inference dùng chung
 ├── download_youtube_dataset.py  # Script tải video từ YouTube
-├── DATASETS.md              # Danh sách dataset và tài nguyên
-├── .gitignore               # Git ignore file
-└── README.md                # File hướng dẫn này
+├── download_dataset_auto.py  # Script tự động tải dataset từ YouTube
+├── setup_dataset.py          # Script tạo cấu trúc dataset
+├── DATASETS.md               # Danh sách dataset và tài nguyên
+├── DOCKER_HUB_GUIDE.md       # Hướng dẫn đẩy image lên Docker Hub
+├── .gitignore                # Git ignore file
+└── README.md                 # File hướng dẫn này
 ```
 
 ## ⚠️ Lưu ý
@@ -108,6 +116,55 @@ API sẽ sẵn sàng tại `http://localhost:8000`. Gửi request:
 curl -X POST http://localhost:8000/predict ^
   -F "video_url=https://example.com/video.mp4"
 ```
+
+## 📦 Chia sẻ qua Docker Hub
+
+### Đẩy image lên Docker Hub
+
+Xem hướng dẫn chi tiết trong file [`DOCKER_HUB_GUIDE.md`](DOCKER_HUB_GUIDE.md).
+
+**Cách nhanh:**
+
+1. Đăng nhập Docker Hub:
+```powershell
+docker login
+```
+
+2. Tag image với username của bạn:
+```powershell
+docker tag videomae-service YOUR_USERNAME/videomae-service:latest
+```
+
+3. Push lên Docker Hub:
+```powershell
+docker push YOUR_USERNAME/videomae-service:latest
+```
+
+**Hoặc dùng script tự động:**
+```powershell
+.\docker-push.ps1 -Username YOUR_USERNAME
+```
+
+### Sử dụng image từ Docker Hub
+
+Người khác có thể pull và chạy image của bạn:
+
+```powershell
+# Pull image
+docker pull YOUR_USERNAME/videomae-service:latest
+
+# Chạy container (Windows)
+docker run -d --name videomae-api -p 8000:8000 `
+  -v C:\path\to\videomae_finetuned_final:/models/videomae_finetuned_final `
+  YOUR_USERNAME/videomae-service:latest
+
+# Chạy container (Linux/Mac)
+docker run -d --name videomae-api -p 8000:8000 \
+  -v /path/to/videomae_finetuned_final:/models/videomae_finetuned_final \
+  YOUR_USERNAME/videomae-service:latest
+```
+
+**Lưu ý:** Image không chứa model weights. Người dùng cần mount thư mục `videomae_finetuned_final` khi chạy container.
 
 ## 📝 Dataset Format
 
